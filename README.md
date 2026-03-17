@@ -14,3 +14,18 @@ Here are some ideas to get you started:
 - 😄 Pronouns: ...
 - ⚡ Fun fact: ...
 -->
+## 📊 GitHub Dashboard
+
+<div align="center">
+
+<img src="https://github-readme-stats.vercel.app/api?username=345678o&show_icons=true&theme=tokyonight" />
+
+<img src="https://streak-stats.demolab.com?user=345678o&theme=tokyonight" />
+
+<img src="https://github-readme-stats.vercel.app/api/top-langs/?username=345678o&layout=compact&theme=tokyonight" />
+
+</div>
+
+---
+
+<img src="https://github-readme-activity-graph.vercel.app/graph?username=345678o&theme=tokyo-night" />
