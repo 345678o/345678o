@@ -28,9 +28,8 @@ Here are some ideas to get you started:
 
 <div align="center">
 
-<img height="165em" src="https://github-readme-stats.vercel.app/api?username=345678o&show_icons=true&theme=tokyonight&hide_border=true&rank_icon=github" />
-
-<img height="165em" src="https://streak-stats.demolab.com?user=345678o&theme=tokyonight&hide_border=true" />
+<img height="165em" src="https://github-readme-stats.vercel.app/api?username=345678o&show_icons=true&theme=tokyonight&hide_border=true&rank_icon=github"&count_private=true />
+<img height="165em" src="https://streak-stats.demolab.com?user=345678o&theme=tokyonight&hide_border=true"&count_private=true />
 
 </div>
 
