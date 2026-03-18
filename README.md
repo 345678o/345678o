@@ -46,40 +46,50 @@ Here are some ideas to get you started:
 
 <br/>
 
-<table width="100%">
+<table align="center" width="90%" style="border-collapse: collapse;">
 
 <tr>
-<td width="50%"></td>
-<td width="50%" align="center">
+
+<td width="50%" align="center" style="border:1px solid #374151; padding:30px;">
 
 <a href="https://github.com/345678o/med-ai">
-<b style="color:#38BDF8; font-size:18px;">🧠 MED AI</b>
+<b style="color:#60A5FA; font-size:20px;">🧠 MED AI</b>
 </a>
+
+<br/><br/>
+
+<sub style="color:#CBD5F5;">
+AI-powered healthcare assistant  
+</sub>
 
 <br/>
 
 <sub style="color:#94A3B8;">
-AI-powered healthcare assistant • Full-stack • AI integration
+Full-stack • AI integration
 </sub>
 
 </td>
-</tr>
 
-<tr>
-<td width="50%" align="center">
+<td width="50%" align="center" style="border:1px solid #374151; padding:30px;">
 
 <a href="https://github.com/345678o/nutri-ai">
-<b style="color:#38BDF8; font-size:18px;">🥗 NUTRI AI</b>
+<b style="color:#60A5FA; font-size:20px;">🥗 NUTRI AI</b>
 </a>
+
+<br/><br/>
+
+<sub style="color:#CBD5F5;">
+Smart nutrition analysis  
+</sub>
 
 <br/>
 
 <sub style="color:#94A3B8;">
-Smart nutrition analysis • Data-driven insights • Python
+Data-driven insights • Python
 </sub>
 
 </td>
-<td width="50%"></td>
+
 </tr>
 
 </table>
