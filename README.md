@@ -140,7 +140,7 @@ A sports-themed web application built to explore core frontend concepts. Focused
 ![CSS3](https://img.shields.io/badge/CSS3-1572B6?style=flat-square&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/JavaScript-F7DF1E?style=flat-square&logo=javascript&logoColor=black)
 
-[📂 Repository]([https://github.com/345678o/YOUR_REPO_LINK](https://github.com/mlritproject26-afk/campus-companion.git)) · [🌐 Live Demo](https://YOUR_DEMO_LINK)
+[📂 Repository]([(https://github.com/mlritproject26-afk/campus-companion.git)](https://github.com/345678o/RACQUET--RUSH.git)) · [🌐 Live Demo]((https://345678o.github.io/RACQUET--RUSH/login.html))
 
 </td>
 <td width="50%" valign="top">
@@ -248,7 +248,7 @@ I'm always open to conversations about interesting projects, open source collabo
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-%230077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/anamikak3131/)
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-%23181717?style=for-the-badge&logo=github)](https://github.com/345678o)
-[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-%23FF5722?style=for-the-badge&logo=firefox)]((https://anamikakumari.vercel.app))
+[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-%23FF5722?style=for-the-badge&logo=firefox)](https://anamikakumari.vercel.app)
 </div>
 
 ---
