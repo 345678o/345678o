@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Anamika — Contribution Shooter</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:#05040f;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  min-height:100vh;
+  font-family:'Courier New',monospace;
+  color:#7ef7a0;
+}
+#gameWrap{
+  position:relative;width:680px;
+  border-radius:14px;overflow:hidden;
+  border:1px solid #1a1a3e;
+  box-shadow:0 0 60px rgba(126,247,160,0.07);
+}
+#hud{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 14px;background:#080714;border-bottom:1px solid #1a1a3e;
+}
+.title{color:#a78bfa;font-size:13px;font-weight:bold;letter-spacing:1px;}
+#hud span{color:#7ef7a0;font-size:12px;letter-spacing:1px;}
+canvas{display:block;background:#05040f;width:100%;cursor:none;}
+#footer{
+  text-align:center;padding:7px;background:#080714;
+  border-top:1px solid #1a1a3e;color:#3a3a6a;
+  font-size:11px;letter-spacing:1.5px;
+}
+#loadScreen{
+  position:absolute;inset:0;background:#05040f;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:14px;z-index:10;
+}
+#loadScreen .logo{color:#a78bfa;font-size:22px;font-weight:bold;letter-spacing:2px;}
+#loadScreen .sub{color:#3a3a6a;font-size:12px;letter-spacing:2px;}
+#loadBar{width:260px;height:4px;background:#1a1a3e;border-radius:4px;overflow:hidden;}
+#loadFill{height:100%;width:0%;background:#7ef7a0;transition:width 0.3s;}
+#loadMsg{color:#3a3a6a;font-size:11px;letter-spacing:1px;}
+</style>
+</head>
+<body>
+<div id="gameWrap">
+  <div id="hud">
+    <span class="title">★ ANAMIKA.EXE</span>
+    <span id="scoreDisplay">SCORE: 0</span>
+    <span id="streakDisplay">STREAK: 0</span>
+    <span id="livesDisplay">♥♥♥</span>
+  </div>
+
+  <div id="loadScreen">
+    <div class="logo">★ ANAMIKA.EXE</div>
+    <div class="sub">LOADING CONTRIBUTION DATA</div>
+    <div id="loadBar"><div id="loadFill"></div></div>
+    <div id="loadMsg">Fetching real commits from GitHub...</div>
+  </div>
+
+  <canvas id="c" height="420"></canvas>
+  <div id="footer">← → MOVE &nbsp;|&nbsp; SPACE / ↑ SHOOT &nbsp;|&nbsp; EVERY ASTEROID = A REAL COMMIT DAY</div>
+</div>
+
+<script>
+const USERNAME = '345678o';
+const API = `https://github-contributions-api.jogruber.de/v4/${USERNAME}?y=last`;
+
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+canvas.width = 680; canvas.height = 420;
+
+const AST_COLORS = ['#1a2a1a','#1e6e2e','#28b847','#4dde6e','#c8ffca'];
+const COLORS     = ['#0e1117','#196127','#239a3b','#3fc05e','#a5f4a5'];
+
+/* ── fetch real contribution data ─────────────────────────── */
+async function loadContributions() {
+  setLoad(20,'Contacting GitHub...');
+  let data;
+  try {
+    const res = await fetch(API);
+    if (!res.ok) throw new Error('API error');
+    data = await res.json();
+    setLoad(80,'Parsing commit history...');
+  } catch(e) {
+    setLoad(80,'API unavailable — using sample data...');
+    data = generateFallback();
+  }
+  await sleep(400);
+  setLoad(100,'Launching game...');
+  await sleep(500);
+  document.getElementById('loadScreen').style.display='none';
+  return data.contributions
+    .filter(c => c.level > 0)
+    .sort(() => Math.random() - 0.5);
+}
+
+function setLoad(pct, msg) {
+  document.getElementById('loadFill').style.width = pct+'%';
+  document.getElementById('loadMsg').textContent = msg;
+}
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function generateFallback() {
+  const contributions=[];
+  const now=new Date(); const start=new Date(now); start.setFullYear(start.getFullYear()-1);
+  for(let d=new Date(start);d<=now;d.setDate(d.getDate()+1)){
+    const r=Math.random(); let level=0;
+    if(r>0.55)level=1; if(r>0.72)level=2; if(r>0.85)level=3; if(r>0.94)level=4;
+    contributions.push({date:d.toISOString().slice(0,10),count:level*3,level});
+  }
+  return {contributions};
+}
+
+/* ── game state ───────────────────────────────────────────── */
+const state = {
+  ship:{x:340,y:370,vx:0},
+  bullets:[],asteroids:[],particles:[],stars:[],warpLines:[],
+  score:0,streak:0,lives:3,
+  gameOver:false,win:false,keys:{},
+  spawnTimer:0,spawnInterval:85,
+  pending:[],
+  totalAsteroids:0,
+  shootCooldown:0,shake:0,
+  yearTotal:0,
+};
+
+for(let i=0;i<130;i++){
+  state.stars.push({
+    x:Math.random()*680,y:Math.random()*420,
+    r:Math.random()*1.5+0.3,sp:Math.random()*0.45+0.1,
+    alpha:Math.random()*0.7+0.3
+  });
+}
+for(let i=0;i<20;i++){
+  state.warpLines.push({
+    x:Math.random()*680,y:Math.random()*420,
+    len:Math.random()*20+5,sp:Math.random()*1+0.3,
+    alpha:Math.random()*0.2+0.05
+  });
+}
+
+document.addEventListener('keydown',e=>{
+  state.keys[e.code]=true;
+  if(e.code==='Space')e.preventDefault();
+  if((e.code==='KeyR'||e.code==='Space')&&(state.gameOver||state.win))restart();
+});
+document.addEventListener('keyup',e=>{state.keys[e.code]=false;});
+canvas.addEventListener('click',()=>{if(state.gameOver||state.win)restart();});
+
+function restart(){
+  state.ship.x=340;state.ship.vx=0;
+  state.bullets=[];state.asteroids=[];state.particles=[];
+  state.score=0;state.streak=0;state.lives=3;
+  state.gameOver=false;state.win=false;
+  state.spawnTimer=0;state.spawnInterval=85;state.shootCooldown=0;state.shake=0;
+  state.pending=[...state._originalPending].sort(()=>Math.random()-0.5);
+  updateHUD();
+}
+
+function spawnAsteroid(){
+  if(!state.pending.length){state.win=true;return;}
+  const cd=state.pending.shift();
+  const size=10+cd.level*8;
+  state.asteroids.push({
+    x:40+Math.random()*600,y:-size,
+    r:size,lvl:cd.level,count:cd.count,date:cd.date,
+    vx:(Math.random()-0.5)*1.4,
+    vy:0.7+cd.level*0.28,
+    hp:cd.level,maxHp:cd.level,
+    rot:Math.random()*Math.PI*2,
+    rotV:(Math.random()-0.5)*0.04,
+    wobble:Math.random()*Math.PI*2,
+    pts:cd.level*10+(cd.count||0),
+  });
+}
+
+function shoot(){
+  if(state.shootCooldown>0)return;
+  state.bullets.push({x:state.ship.x,y:state.ship.y-14,vy:-11});
+  state.shootCooldown=14;
+}
+
+function spawnParticles(x,y,color,count){
+  for(let i=0;i<count;i++){
+    const a=Math.random()*Math.PI*2,sp=Math.random()*3.5+0.5;
+    state.particles.push({
+      x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,
+      life:30+Math.random()*20,maxLife:50,
+      r:Math.random()*3+1,color
+    });
+  }
+}
+
+function updateHUD(){
+  document.getElementById('scoreDisplay').textContent='SCORE: '+state.score;
+  document.getElementById('streakDisplay').textContent='STREAK: '+state.streak+(state.streak>=5?' 🔥':'');
+  document.getElementById('livesDisplay').textContent='♥'.repeat(Math.max(0,state.lives))+'♡'.repeat(Math.max(0,3-state.lives));
+}
+
+/* ── draw helpers ─────────────────────────────────────────── */
+function drawShip(x,y){
+  ctx.save(); ctx.translate(x,y);
+  ctx.shadowBlur=12; ctx.shadowColor='#7ef7a0';
+  ctx.fillStyle='#9dffc0';
+  ctx.beginPath();
+  ctx.moveTo(0,-16);ctx.lineTo(-14,14);ctx.lineTo(-5,8);
+  ctx.lineTo(0,10);ctx.lineTo(5,8);ctx.lineTo(14,14);
+  ctx.closePath();ctx.fill();
+  ctx.fillStyle='#c5fff0';
+  ctx.beginPath();
+  ctx.moveTo(0,-12);ctx.lineTo(-5,6);ctx.lineTo(0,4);ctx.lineTo(5,6);
+  ctx.closePath();ctx.fill();
+  ctx.fillStyle='#1e3a2a';
+  ctx.beginPath();ctx.arc(0,0,5,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(40,220,120,0.2)';
+  ctx.beginPath();ctx.ellipse(0,19,10,5,0,0,Math.PI*2);ctx.fill();
+  ctx.shadowBlur=0;ctx.restore();
+}
+
+function drawAsteroid(ast){
+  ctx.save(); ctx.translate(ast.x,ast.y); ctx.rotate(ast.rot);
+  ctx.shadowBlur=ast.lvl>=3?14:6;
+  ctx.shadowColor=COLORS[Math.min(ast.lvl,4)];
+  ctx.fillStyle=AST_COLORS[Math.min(ast.lvl,4)];
+  ctx.strokeStyle=COLORS[Math.min(ast.lvl,4)];
+  ctx.lineWidth=1.5;
+  ctx.beginPath();
+  const pts=7+ast.lvl;
+  for(let i=0;i<pts;i++){
+    const a=(i/pts)*Math.PI*2;
+    const wobble=Math.sin(ast.wobble+i*1.3)*ast.r*0.18;
+    const r=ast.r+wobble;
+    if(i===0)ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+    else ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+  }
+  ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.shadowBlur=0;
+
+  if(ast.hp<ast.maxHp){
+    const pct=ast.hp/ast.maxHp;
+    ctx.fillStyle='rgba(0,0,0,0.5)';
+    ctx.fillRect(-ast.r,-ast.r-14,ast.r*2,5);
+    ctx.fillStyle=pct>0.5?'#3fc05e':'#f59e0b';
+    ctx.fillRect(-ast.r,-ast.r-14,ast.r*2*pct,5);
+  }
+  ctx.fillStyle='#c8ffca';
+  ctx.font=`bold ${9+ast.lvl*2}px Courier New`;
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(ast.pts+'pts',0,0);
+  ctx.restore();
+}
+
+function drawProgressBar(){
+  const W=canvas.width;
+  const total=state.totalAsteroids;
+  const remaining=state.pending.length+state.asteroids.length;
+  const done=total-remaining;
+  const pct=total>0?done/total:0;
+  ctx.fillStyle='rgba(26,26,62,0.7)';
+  ctx.fillRect(40,10,600,6);
+  ctx.fillStyle='#239a3b';
+  ctx.fillRect(40,10,600*pct,6);
+  ctx.fillStyle='#3a6a3a';
+  ctx.font='10px Courier New';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText(`${done}/${total} commits destroyed`,44,24);
+}
+
+/* ── main loop ────────────────────────────────────────────── */
+function loop(){
+  requestAnimationFrame(loop);
+  const W=canvas.width,H=canvas.height;
+  ctx.fillStyle='#05040f';ctx.fillRect(0,0,W,H);
+
+  if(state.shake>0){
+    ctx.save();
+    ctx.translate((Math.random()-.5)*state.shake,(Math.random()-.5)*state.shake);
+    state.shake*=0.78;if(state.shake<0.5)state.shake=0;
+  }
+
+  for(const s of state.stars){
+    s.y+=s.sp;if(s.y>H){s.y=0;s.x=Math.random()*W;}
+    ctx.globalAlpha=s.alpha;ctx.fillStyle='#fff';
+    ctx.beginPath();ctx.arc(s.x,s.y,s.r,0,Math.PI*2);ctx.fill();
+  }
+  ctx.globalAlpha=1;
+
+  for(const wl of state.warpLines){
+    wl.y+=wl.sp;if(wl.y>H){wl.y=0;wl.x=Math.random()*W;}
+    ctx.globalAlpha=wl.alpha;ctx.strokeStyle='#4444aa';ctx.lineWidth=0.5;
+    ctx.beginPath();ctx.moveTo(wl.x,wl.y);ctx.lineTo(wl.x,wl.y+wl.len);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+
+  if(!state.gameOver&&!state.win){
+    if(state.keys['ArrowLeft']||state.keys['KeyA'])state.ship.vx-=0.7;
+    if(state.keys['ArrowRight']||state.keys['KeyD'])state.ship.vx+=0.7;
+    if(state.keys['Space']||state.keys['ArrowUp']||state.keys['KeyW'])shoot();
+    state.ship.vx*=0.82;
+    state.ship.x+=state.ship.vx;
+    state.ship.x=Math.max(24,Math.min(W-24,state.ship.x));
+    if(state.shootCooldown>0)state.shootCooldown--;
+
+    state.spawnTimer++;
+    if(state.spawnTimer>=state.spawnInterval){
+      state.spawnTimer=0;spawnAsteroid();
+      state.spawnInterval=Math.max(28,state.spawnInterval-0.5);
+    }
+
+    for(let i=state.bullets.length-1;i>=0;i--){
+      const b=state.bullets[i];b.y+=b.vy;
+      if(b.y<-10){state.bullets.splice(i,1);continue;}
+      ctx.fillStyle='#a5f4a5';ctx.shadowBlur=8;ctx.shadowColor='#3fc05e';
+      ctx.fillRect(b.x-1.5,b.y-6,3,12);ctx.shadowBlur=0;
+    }
+
+    for(let i=state.asteroids.length-1;i>=0;i--){
+      const ast=state.asteroids[i];
+      ast.x+=ast.vx;ast.y+=ast.vy;ast.rot+=ast.rotV;ast.wobble+=0.03;
+      if(ast.x<0||ast.x>W)ast.vx*=-1;
+      if(ast.y-ast.r>H){
+        state.asteroids.splice(i,1);state.streak=0;updateHUD();continue;
+      }
+
+      for(let j=state.bullets.length-1;j>=0;j--){
+        const b=state.bullets[j];
+        const dx=b.x-ast.x,dy=b.y-ast.y;
+        if(Math.sqrt(dx*dx+dy*dy)<ast.r+4){
+          ast.hp--;state.bullets.splice(j,1);
+          spawnParticles(ast.x,ast.y,COLORS[ast.lvl],6);
+          if(ast.hp<=0){
+            spawnParticles(ast.x,ast.y,COLORS[ast.lvl],20);
+            state.score+=ast.pts+(state.streak>=5?Math.floor(ast.pts*0.5):0);
+            state.streak++;
+            state.asteroids.splice(i,1);
+            updateHUD();break;
+          }
+          break;
+        }
+      }
+
+      if(state.asteroids[i]){
+        const sdx=state.ship.x-ast.x,sdy=state.ship.y-ast.y;
+        if(Math.sqrt(sdx*sdx+sdy*sdy)<ast.r+14){
+          state.lives--;state.streak=0;state.shake=10;
+          spawnParticles(state.ship.x,state.ship.y,'#ff6060',22);
+          state.asteroids.splice(i,1);updateHUD();
+          if(state.lives<=0)state.gameOver=true;
+          continue;
+        }
+        drawAsteroid(ast);
+      }
+    }
+
+    for(let i=state.particles.length-1;i>=0;i--){
+      const p=state.particles[i];
+      p.x+=p.vx;p.y+=p.vy;p.vy+=0.06;p.life--;
+      if(p.life<=0){state.particles.splice(i,1);continue;}
+      ctx.globalAlpha=p.life/p.maxLife;ctx.fillStyle=p.color;
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=1;
+    }
+
+    drawShip(state.ship.x,state.ship.y);
+    drawProgressBar();
+
+    if(state.streak>=5){
+      ctx.globalAlpha=0.85;ctx.fillStyle='#a5f4a5';
+      ctx.font='bold 13px Courier New';ctx.textAlign='center';
+      ctx.fillText('🔥 COMBO x'+state.streak,W/2,38);
+      ctx.globalAlpha=1;
+    }
+  }
+
+  if(state.shake>0)ctx.restore();
+
+  if(state.gameOver||state.win){
+    ctx.fillStyle='rgba(5,4,15,0.88)';ctx.fillRect(0,0,W,H);
+    ctx.textAlign='center';
+    if(state.gameOver){
+      ctx.fillStyle='#ff6060';ctx.font='bold 32px Courier New';
+      ctx.fillText('GAME OVER',W/2,H/2-60);
+      ctx.fillStyle='#666';ctx.font='13px Courier New';
+      ctx.fillText('The commits overwhelmed you',W/2,H/2-30);
+    } else {
+      ctx.fillStyle='#a5f4a5';ctx.font='bold 26px Courier New';
+      ctx.fillText('ALL COMMITS CLEARED!',W/2,H/2-60);
+      ctx.fillStyle='#7ef7a0';ctx.font='13px Courier New';
+      ctx.fillText("Anamika's contribution streak is unstoppable 🚀",W/2,H/2-30);
+    }
+    ctx.fillStyle='#a78bfa';ctx.font='bold 20px Courier New';
+    ctx.fillText('FINAL SCORE: '+state.score,W/2,H/2+8);
+    ctx.fillStyle='#3fc05e';ctx.font='12px Courier New';
+    ctx.fillText('Total contributions destroyed: '+(state.totalAsteroids-state.pending.length-state.asteroids.length),W/2,H/2+32);
+    ctx.fillStyle='#3a3a6a';ctx.font='12px Courier New';
+    ctx.fillText('[ CLICK or SPACE to play again ]',W/2,H/2+64);
+  }
+}
+
+/* ── bootstrap ────────────────────────────────────────────── */
+(async()=>{
+  const contributions = await loadContributions();
+  state.pending = contributions;
+  state._originalPending = [...contributions];
+  state.totalAsteroids = contributions.length;
+  updateHUD();
+  loop();
+})();
+</script>
+</body>
+</html>
