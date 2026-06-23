@@ -8,7 +8,7 @@
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-%230077B5.svg?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/anamikak3131/)
 [![GitHub](https://img.shields.io/badge/GitHub-%23121011.svg?style=for-the-badge&logo=github&logoColor=white)](https://github.com/345678o)
-[![Portfolio](https://img.shields.io/badge/Portfolio-%23FF5722.svg?style=for-the-badge&logo=firefox&logoColor=white)](https://anamikakumari.vercel.app)
+[![Portfolio](https://img.shields.io/badge/Portfolio-%23FF5722.svg?style=for-the-badge&logo=firefox&logoColor=white)]()
 
 </div>
 
@@ -248,7 +248,7 @@ I'm always open to conversations about interesting projects, open source collabo
 
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Connect-%230077B5?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/anamikak3131/)
 [![GitHub](https://img.shields.io/badge/GitHub-Follow-%23181717?style=for-the-badge&logo=github)](https://github.com/345678o)
-[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-%23FF5722?style=for-the-badge&logo=firefox)](https://anamikakumari.vercel.app)
+[![Portfolio](https://img.shields.io/badge/Portfolio-Visit-%23FF5722?style=for-the-badge&logo=firefox)]()
 </div>
 
 ---
